@@ -1,0 +1,193 @@
+[
+  {
+    "brand": "Chicco D'Oro",
+    "brandLine": "Tradition",
+    "breadcrumb": [
+      {
+        "id": "7494734",
+        "name": "Getränke, Kaffee & Tee",
+        "slugs": [
+          "getranke-kaffee-tee"
+        ]
+      },
+      {
+        "id": "7494772",
+        "name": "Kaffee",
+        "slugs": [
+          "getranke-kaffee-tee",
+          "kaffee"
+        ]
+      },
+      {
+        "id": "7494966",
+        "name": "Bohnenkaffee",
+        "slugs": [
+          "getranke-kaffee-tee",
+          "kaffee",
+          "bohnenkaffee"
+        ]
+      }
+    ],
+    "description": "Chicco D'Oro Tradition · Bohnenkaffee",
+    "gtins": [
+      "7610899110006"
+    ],
+    "imageTransparent": {
+      "cdn": "rokka",
+      "url": "https://image.migros.ch/d/{stack}/64095521373b97be32732407f6cbe6d8353a780c/chicco-doro-tradition-bohnenkaffee.png"
+    },
+    "images": [
+      {
+        "cdn": "rokka",
+        "url": "https://image.migros.ch/d/{stack}/o-af-1-t.clr-fff/64095521373b97be32732407f6cbe6d8353a780c/chicco-doro-tradition-bohnenkaffee.jpg"
+      }
+    ],
+    "isConsignmentProduct": false,
+    "isMgbCompatible": true,
+    "migrosId": "107112500000",
+    "migrosOnlineId": "12471",
+    "name": "Bohnenkaffee",
+    "offer": {
+      "badges": [
+        {
+          "description": "40%",
+          "enrichedDescription": "40%",
+          "rawDescription": "40%",
+          "type": "PERCENTAGE_PROMOTION"
+        },
+        {
+          "description": "Ab 2 Stück",
+          "enrichedDescription": "Ab 2 Stück",
+          "rawDescription": "Ab 2 Stück",
+          "type": "MINIMUM_PIECES"
+        }
+      ],
+      "channel": {
+        "offerType": "OFFLINE",
+        "region": "national"
+      },
+      "displayPrice": true,
+      "isNewOffer": false,
+      "isNotMorningDeliverable": false,
+      "isVariableWeight": false,
+      "maxOrderableQuantityV2": 96,
+      "price": {
+        "advertisedDisplayValue": "19.90",
+        "advertisedValue": 19.9,
+        "displayUnitPrice": false,
+        "effectiveDisplayValue": "19.90",
+        "effectiveValue": 19.9,
+        "multiplier": 1,
+        "unitPrice": {
+          "unit": "100g",
+          "value": 1.99
+        }
+      },
+      "priceInsteadOfLabel": "statt",
+      "promotionDateRange": {
+        "endDate": "2026-10-28",
+        "startDate": "2026-10-22"
+      },
+      "promotionPrice": {
+        "advertisedDisplayValue": "11.94",
+        "advertisedValue": 11.94,
+        "displayUnitPrice": true,
+        "effectiveDisplayValue": "11.94",
+        "effectiveValue": 11.94,
+        "multiplier": 1,
+        "unitPrice": {
+          "unit": "100g",
+          "value": 1.19
+        }
+      },
+      "quantity": "1kg",
+      "quantityPrice": "1.19/100g",
+      "type": "STANDARD"
+    },
+    "productAvailability": "ONLINE_AND_INSTORE",
+    "productInformation": {
+      "mainInformation": {
+        "brand": {
+          "name": "Chicco D'Oro",
+          "slug": "chicco-doro"
+        },
+        "ingredients": "Kaffee der beiden Sorten Arabica und Robusta, der aus verschiedenen Ländern (nicht in EU) kommt.",
+        "migipediaUrl": "https://migipedia.migros.ch/de/products/107112500000",
+        "origin": "Die Herkunftsangabe findest du auf der Verpackung in der Filiale.",
+        "rating": {
+          "nbReviews": 678,
+          "nbStars": 5
+        }
+      },
+      "otherInformation": {
+        "articleNumber": "107112500000",
+        "distributorName": "Caffé Chicco d'Oro di Eredi Rino Valsangiacomo SA",
+        "distributorStreetAndNumber": "Via G. Motta 2, 6828 Balerna",
+        "legalDesignation": "Kaffee, gerösteten und in ganzen Bohnen.",
+        "mainSpecificities": [
+          {
+            "code": "Zubereitungsart",
+            "value": "Röstkaffee"
+          },
+          {
+            "code": "Produktionsverfahren",
+            "value": "100% natürliche Zutaten, Geröstet"
+          },
+          {
+            "code": "Botanische Sorte",
+            "value": "Arabica / Robusta"
+          },
+          {
+            "code": "Verpackungsart",
+            "value": "Beutel/Sack"
+          },
+          {
+            "code": "Hinweise für die Zubereitung",
+            "value": "Kaffeevollautomaten"
+          },
+          {
+            "code": "Wiederverschliessbar",
+            "value": "Ja"
+          },
+          {
+            "code": "Verwendungshinweis",
+            "value": "Vollautomat"
+          },
+          {
+            "code": "Kaffeeform",
+            "value": "Kaffeebohnen"
+          },
+          {
+            "code": "Kaffeeröstung",
+            "value": "mittlere Röstung"
+          },
+          {
+            "code": "Entkoffeiniert",
+            "value": "Nein"
+          },
+          {
+            "code": "Säure (1-10)",
+            "value": "1"
+          }
+        ],
+        "remarks": [
+          {
+            "code": "Warnhinweise / Pflichthinweise",
+            "value": "Hergestellt und vertrieben in der Schweiz durch:Caffè Chicco d'Oro di Eredi Rino Valsangiacomo SAVia Motta 2 - CH-6828 Balerna - www.chiccodoro.comVertrieben durch:Chicco d'Oro Italia SrlVia Volta 34 - I-22071 Cadorago (CO) - www.chiccodoro.itCaffè Chicco d'Oro GmbHIn de Tarpen 51 - D-22848 Norderstedt - www.chiccodoro.deCaffè Chicco d'Oro Ristretto VertriebsgesmbHWalgaustrasse 13 - A-6833 Klaus - www.chiccodoro.atMindestens haltbar bis Ende: Monat und JahrChargennummerZusammensetzung der Verpackungen nach der Entscheidung 97/129/EG: - Recyclingcode für Paket: C/LDPE90"
+          },
+          {
+            "code": "Aufbewahrungshinweise für den Konsumenten",
+            "value": "Bewahren Sie das Produkt an einem kühlen, trockenen Ort auf. Während seines Transports und seiner Lagerung vermeiden Sie jegliche Handlung, die die Integrität der Verpackung beeinträchtigen könnte. Auf dieser Weise bleibt das Produkt gut gegen aussenen Einwirkungen geschützt, einschliesslich möglicher physischer, chemischer und mikrobiologischer Verunreinigungen, die das Verderben des Produkts fördern könnten. Nach der Öffnung des Pakets, bewahren Sie das Produkt in gut verschlossenen Behältern oder in seiner originalen, gut verschlossenen Verpackung auf, an einem trockenen Ort, gegen Licht geschützt und nicht in der Nähe von Wärmequellen. Verzehren Sie das Produkt innerhalb weniger Tage."
+          }
+        ]
+      },
+      "usageInformation": {
+        "additionalInformation": "Die Chicco d'Oro Mischung geht auf eine lange Tradition zurück. Sie verdankt ihr Prestige dem allzeithohen Qualitätsstandard. Die besten Kaffeesorten der Welt sichern ihr das kräftige; von wahren Kaffeekennern geschätzte Aroma."
+      }
+    },
+    "productRange": "STANDARD",
+    "productUrls": "https://www.migros.ch/de/product/107112500000",
+    "title": "Chicco D'Oro Tradition · Bohnenkaffee",
+    "uid": 100001926
+  }
+]

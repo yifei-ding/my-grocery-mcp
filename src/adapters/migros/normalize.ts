@@ -142,6 +142,21 @@ export function parseSize(measurement: string | undefined): { value: number; uni
   return undefined;
 }
 
+type MigrosBadge = { type?: string; description?: string; rawDescription?: string };
+
+/** Minimum piece count from a MINIMUM_PIECES badge ("Ab 2 Stück" -> 2); 0 if absent. */
+export function readMinimumPieces(badges: MigrosBadge[] | undefined): number {
+  const badge = badges?.find((b) => b.type === 'MINIMUM_PIECES');
+  const digits = (badge?.description ?? badge?.rawDescription ?? '').match(/\d+/);
+  return digits ? Number(digits[0]) : 0;
+}
+
+/** e.g. "40% ab 2 Stück: CHF 11.94 pro Stück statt 19.90" */
+function describeQuantityDeal(pct: string | undefined, minPieces: number, dealPrice: number, singlePrice: number): string {
+  const head = [pct, `ab ${minPieces} Stück`].filter(Boolean).join(' ');
+  return `${head}: CHF ${dealPrice.toFixed(2)} pro Stück statt ${singlePrice.toFixed(2)}`;
+}
+
 export function normalizeProduct(raw: MigrosProductRaw): NormalizedProduct {
   // Real API: id is uid (number) or migrosId (string)
   const id = raw.migrosId ?? String(raw.uid ?? '');
@@ -158,10 +173,21 @@ export function normalizeProduct(raw: MigrosProductRaw): NormalizedProduct {
     typeof raw.offer?.promotionPrice?.effectiveValue === 'number' &&
     raw.offer.promotionPrice.effectiveValue > 0;
 
+  // Quantity deals ("40%" plus a MINIMUM_PIECES badge "Ab 2 Stück"): Migros
+  // reports the discounted per-piece price in promotionPrice, but a single
+  // piece still costs offer.price. Price one piece honestly and carry the
+  // deal in the promotion description instead.
+  const minPieces = readMinimumPieces(raw.offer?.badges);
+  const isQuantityDeal = hasPromoPrice && minPieces > 1;
+
   let current: number;
   let isApprox: boolean;
   let regular: number | undefined;
-  if (hasPromoPrice) {
+  if (isQuantityDeal && typeof raw.offer?.price?.effectiveValue === 'number') {
+    current = raw.offer.price.effectiveValue;
+    isApprox = false;
+    regular = undefined;
+  } else if (hasPromoPrice) {
     current = raw.offer!.promotionPrice!.effectiveValue!;
     isApprox = false;
     const reg = raw.offer?.price?.effectiveValue;
@@ -202,6 +228,9 @@ export function normalizeProduct(raw: MigrosProductRaw): NormalizedProduct {
       ? {
           endsAt: dateRangeEnd ?? raw.offer?.promotion?.endsAt,
           description:
+            (isQuantityDeal
+              ? describeQuantityDeal(pctBadge?.description, minPieces, raw.offer!.promotionPrice!.effectiveValue!, current)
+              : undefined) ??
             pctBadge?.description ??
             (raw.offer?.priceInsteadOfLabel && regular !== undefined
               ? `${raw.offer.priceInsteadOfLabel} CHF ${regular.toFixed(2)}`
