@@ -22,6 +22,9 @@ import { normalizeProduct, normalizeStore, normalizePromotion } from './normaliz
 import { ok, err } from '../../util/adapter-result.js';
 import { MigrosProductDetailsResponseSchema } from './schemas.js';
 import { haversineKm } from '../../util/haversine.js';
+import {
+  fetchAllPromoItems, textMatches, matchText, productToPromotion, DETAIL_BATCH_SIZE, type PromoPage,
+} from './promotions.js';
 
 function classifyError(e: unknown): AdapterError {
   const msg = e instanceof Error ? e.message : String(e);
@@ -140,50 +143,43 @@ export class MigrosAdapter implements StoreAdapter {
 
   async getPromotions(q: PromotionQuery): Promise<AdapterResult<NormalizedPromotion[]>> {
     try {
-      const r = await this.withAuthRetry(() => this.api.products.productDisplay.getProductPromotionSearch({
-        query: q.query ?? '',
-        language: q.language ?? 'de',
-      } as any));
-      // r = { items: [{id, type},...], numberOfItems, startDate, endDate }
-      const items = ((r as any).items ?? []) as Array<{ id: number | string; type?: string }>;
-      const startDate: string | undefined = (r as any).startDate;
-      const endDate: string | undefined = (r as any).endDate;
+      const language = q.language ?? 'de';
+      const { items, startDate, endDate } = await fetchAllPromoItems((from, until) =>
+        this.withAuthRetry(() => this.api.products.productDisplay.getProductPromotionSearch({
+          language, from, until,
+        } as any)) as Promise<PromoPage>,
+      );
 
-      // Migros's promotion-search returns ~55 product items per week plus
-      // ~45 GROUP_PROMOTION entries (category-level discounts that can't
-      // be expressed as individual deal cards). Take all PRODUCT items.
-      const productIds = items
-        .filter((it) => !it.type || it.type === 'PRODUCT')
-        .map((it) => String(it.id))
-        .slice(0, 100);
+      // Only PRODUCT items name a single product; other types (seen in older
+      // captures as GROUP_PROMOTION) carry no product id and are skipped.
+      const uids = [...new Set(items.filter((it) => !it.type || it.type === 'PRODUCT').map((it) => String(it.id)))];
 
-      if (productIds.length === 0) return ok([]);
+      const products: NormalizedProduct[] = [];
+      for (let i = 0; i < uids.length; i += DETAIL_BATCH_SIZE) {
+        const det: any = await this.withAuthRetry(() => this.api.products.productDisplay.getProductDetails({
+          uids: uids.slice(i, i + DETAIL_BATCH_SIZE), language,
+        } as any));
+        const raws = (Array.isArray(det) ? det : Object.values(det ?? {})) as any[];
+        products.push(...raws.map(normalizeProduct));
+      }
 
-      const detailsR: any = await this.api.products.productDisplay.getProductDetails({
-        uids: productIds,
-        language: q.language ?? 'de',
-      } as any);
-      const products = (Array.isArray(detailsR) ? detailsR : Object.values(detailsR as Record<string, unknown>)) as any[];
+      let promos = products.map((p) => productToPromotion(p, startDate, endDate));
 
-      let promos: NormalizedPromotion[] = products.map((raw) => {
-        const np = normalizeProduct(raw);
-        // Prefer per-product promotion end date when present; fall back to
-        // the campaign-wide endDate from the search response.
-        const perProductEnd = raw?.offer?.promotionDateRange?.endDate as string | undefined;
-        return {
-          chain: 'migros' as const,
-          productId: np.id,
-          productName: np.name,
-          brand: np.brand,
-          imageUrl: np.imageUrl,
-          size: np.size,
-          unitPrice: np.unitPrice,
-          price: np.price,
-          validFrom: raw?.offer?.promotionDateRange?.startDate ?? startDate,
-          validUntil: perProductEnd ?? endDate,
-          description: np.promotion?.description,
-        };
-      });
+      const query = q.query?.trim();
+      if (query) {
+        const kept = new Set(products.filter((p) => textMatches(query, matchText(p))).map((p) => p.id));
+        promos = promos.filter((p) => p.productId !== undefined && kept.has(p.productId));
+        // Cheap second source for keyword queries: a regular search returns
+        // promotion data too, and catches deals the list does not expose.
+        const found = await this.searchProducts({ query, language, limit: 40 });
+        if (found.ok) {
+          for (const p of found.data) {
+            if (!p.promotion || kept.has(p.id) || !textMatches(query, matchText(p))) continue;
+            kept.add(p.id);
+            promos.push(productToPromotion(p, startDate, endDate));
+          }
+        }
+      }
 
       if (q.endingWithinDays !== undefined) {
         const cutoff = Date.now() + q.endingWithinDays * 24 * 3600 * 1000;
