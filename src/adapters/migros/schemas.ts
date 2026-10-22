@@ -24,7 +24,12 @@ export const MigrosProductDetailSchema = z.object({
       endsAt: z.string().optional(),
       description: z.string().optional(),
     }).optional(),
-  }).optional(),
+  })
+    // Keep undeclared offer fields (badges, promotionPrice, promotionDateRange).
+    // zod drops unknown keys from nested objects by default, which removed all
+    // promotion data from search results.
+    .passthrough()
+    .optional(),
   images: z.array(z.object({
     url: z.string().optional(),
     cdn: z.string().optional(),
