@@ -94,3 +94,20 @@ describe('Migros getPromotions', () => {
     expect(r.ok && r.data.map((p) => p.productId)).toEqual(['107112500000']);
   });
 });
+
+describe('Migros region', () => {
+  it('sends the Zürich region by default', async () => {
+    const seen: any[] = [];
+    const adapter = new MigrosAdapter();
+    (adapter as any).api = {
+      account: { oauth2: { loginGuestToken: async () => {} } },
+      products: {
+        productSearch: { searchProduct: async (o: any) => { seen.push(o); return { productIds: [1] }; } },
+        productDisplay: { getProductDetails: async (o: any) => { seen.push(o); return {}; } },
+      },
+    };
+    await adapter.searchProducts({ query: 'milch' });
+    expect(seen[0].regionId).toBe('2');
+    expect(seen[1].region).toBe('2');
+  });
+});
