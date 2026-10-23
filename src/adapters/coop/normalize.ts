@@ -1,7 +1,42 @@
-import type { NormalizedProduct, NormalizedStore, NormalizedPromotion, Unit } from '../types.js';
+import type { NormalizedProduct, NormalizedStore, NormalizedPromotion, NutritionFacts, Unit } from '../types.js';
 import { computeUnitPrice } from '../../util/unit-price.js';
 import { annotateMultipack } from '../../util/multipack.js';
 import { deriveCoopTags } from './tags.js';
+
+// Coop's nutritionInformationPerUnit is a flat list of {name, assembledValue}
+// rows (German label + "3.5g"-style text), not a table like Migros's. Energy
+// gets its own "Energie in kcal" row instead of a combined "kJ (kcal)" cell.
+const NUTRI_LABELS: Record<string, keyof Omit<NutritionFacts, 'basis'>> = {
+  'energie in kcal': 'kcal',
+  'fett': 'fat',
+  'davon gesättigte fettsäuren': 'satFat',
+  'kohlenhydrate': 'carbs',
+  'davon zucker': 'sugar',
+  'nahrungsfasern (ballaststoffe)': 'fiber',
+  'eiweiss': 'protein',
+  'salz': 'salt',
+};
+
+/**
+ * Parses raw.nutritionInformation.nutritionInformationPerUnit (per 100g/ml).
+ * Not every product has one — unlabelled fresh produce and items without a
+ * printed nutrition facts panel (e.g. coffee beans, on any chain) don't.
+ */
+export function parseNutrition(raw: Pick<HybrisProduct, 'nutritionInformation'>): NutritionFacts | undefined {
+  const perUnit = raw?.nutritionInformation?.nutritionInformationPerUnit;
+  const desc = perUnit?.description;
+  if (!perUnit || typeof desc !== 'string' || !/100/.test(desc)) return undefined;
+  const basis: NutritionFacts['basis'] = /ml/i.test(desc) ? '100ml' : '100g';
+  const out: NutritionFacts = { basis };
+  for (const n of (perUnit.nutrients ?? []) as Array<{ name?: string; assembledValue?: string }>) {
+    const key = NUTRI_LABELS[String(n.name ?? '').trim().toLowerCase()];
+    if (!key) continue;
+    const m = String(n.assembledValue ?? '').match(/([\d.,]+)/);
+    if (!m) continue;
+    out[key] = parseFloat(m[1].replace(',', '.'));
+  }
+  return out.kcal !== undefined ? out : undefined;
+}
 
 const SIZE_RX = /([\d.,]+)\s*(g|kg|ml|cl|dl|l|er|stk)/i;
 
@@ -56,6 +91,14 @@ interface HybrisProduct {
   glutenFree?: boolean;
   lactoseFree?: boolean;
   regionalProduct?: boolean;
+  // Only present on products with a printed nutrition facts panel — many
+  // don't (coffee beans, unlabelled fresh produce).
+  nutritionInformation?: {
+    nutritionInformationPerUnit?: {
+      description?: string;
+      nutrients?: Array<{ name?: string; assembledValue?: string }>;
+    };
+  };
 }
 
 export function normalizeProduct(raw: HybrisProduct & { title?: string; fullName?: string; productName?: string }): NormalizedProduct {
@@ -95,6 +138,7 @@ export function normalizeProduct(raw: HybrisProduct & { title?: string; fullName
     category,
     imageUrl,
     promotion,
+    nutrition: parseNutrition(raw),
     raw,
   };
   product.unitPrice = computeUnitPrice(current, size);

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { normalizeProduct, normalizeStore, parseSize } from '../../src/adapters/coop/normalize.js';
+import { normalizeProduct, normalizeStore, parseSize, parseNutrition } from '../../src/adapters/coop/normalize.js';
 import { CoopSearchResponseSchema, CoopProductSchema } from '../../src/adapters/coop/schemas.js';
 
 describe('coop parseSize', () => {
@@ -13,6 +13,52 @@ describe('coop parseSize', () => {
   it('returns undefined for empty string', () => expect(parseSize('')).toBeUndefined());
   it('returns undefined for undefined', () => expect(parseSize(undefined)).toBeUndefined());
   it('returns undefined for non-size text', () => expect(parseSize('Frisch')).toBeUndefined());
+});
+
+describe('coop parseNutrition', () => {
+  // Real get_product response for Naturaplan Bio Joghurt Nature (code 7303612,
+  // captured 2026-10-23): nutritionInformationPerUnit is a flat label/value
+  // list, not a table — "Energie in kcal" is its own row, unlike Migros's
+  // combined "287 kJ (69 kcal)" cell.
+  const nutritionInformation = {
+    nutritionInformationPerUnit: {
+      description: '100g',
+      nutrients: [
+        { name: 'Energie in kJ', assembledValue: '274' },
+        { name: 'Energie in kcal', assembledValue: '66' },
+        { name: 'Fett', assembledValue: '3.5g' },
+        { name: 'davon gesättigte Fettsäuren', assembledValue: '2.1g' },
+        { name: 'Kohlenhydrate', assembledValue: '3.8g' },
+        { name: 'davon Zucker', assembledValue: '3.8g' },
+        { name: 'Nahrungsfasern (Ballaststoffe)', assembledValue: '0g' },
+        { name: 'Eiweiss', assembledValue: '4.7g' },
+        { name: 'Salz', assembledValue: '0.09g' },
+      ],
+    },
+  };
+
+  it('parses the per-100g nutrient list', () => {
+    expect(parseNutrition({ nutritionInformation })).toEqual({
+      basis: '100g',
+      kcal: 66,
+      fat: 3.5,
+      satFat: 2.1,
+      carbs: 3.8,
+      sugar: 3.8,
+      fiber: 0,
+      protein: 4.7,
+      salt: 0.09,
+    });
+  });
+
+  it('returns undefined when there is no nutrition facts panel (e.g. coffee beans)', () => {
+    expect(parseNutrition({})).toBeUndefined();
+  });
+
+  it('flows through normalizeProduct onto the nutrition field', () => {
+    const p = normalizeProduct({ code: '7303612', name: 'Naturaplan Bio Joghurt Nature', nutritionInformation } as any);
+    expect(p.nutrition?.kcal).toBe(66);
+  });
 });
 
 describe('coop normalizeProduct (unit)', () => {
