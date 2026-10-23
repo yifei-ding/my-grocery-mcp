@@ -118,13 +118,41 @@ export class MigrosAdapter implements StoreAdapter {
     }
   }
 
+  /** getProductDetails only accepts uids (9 digits) — never a migrosId. */
+  private async fetchByUid(uid: string): Promise<any | null> {
+    const r = await this.withAuthRetry(() => this.api.products.productDisplay.getProductDetails({
+      uids: [uid], language: 'de', region: MIGROS_REGION,
+    } as any));
+    const products = Object.values(r as Record<string, unknown>);
+    return products[0] ?? null;
+  }
+
+  /**
+   * id passed to getProduct is often a migrosId (12 digits) — it's the `id`
+   * field normalize.ts exposes on search results, and what the Migros
+   * receipt API (/ma/api/user/receipt/<id>/product) hands back — not a uid.
+   * getProductDetails silently returns [] for a uid that doesn't exist, so
+   * resolve it by searching for the id as free text, which reliably matches
+   * exactly the one product carrying it, and yields its uid. Some products
+   * only turn up under the "national" region rather than the adapter's
+   * configured MIGROS_REGION, so retry there before giving up.
+   */
+  private async resolveMigrosId(migrosId: string): Promise<any | null> {
+    const regions = [...new Set([MIGROS_REGION, 'national'])];
+    for (const regionId of regions) {
+      const search = await this.withAuthRetry(() => this.api.products.productSearch.searchProduct({
+        query: migrosId, language: 'de', regionId,
+      } as any));
+      const uid = (search as any)?.productIds?.[0];
+      if (uid !== undefined) return this.fetchByUid(String(uid));
+    }
+    return null;
+  }
+
   async getProduct(id: string): Promise<AdapterResult<NormalizedProduct | null>> {
     try {
-      // id is a uid (numeric string)
-      const r = await this.withAuthRetry(() => this.api.products.productDisplay.getProductDetails({ uids: [id], language: 'de', region: MIGROS_REGION } as any));
-      const products = Object.values(r as Record<string, unknown>);
-      const first = products[0];
-      return ok(first ? normalizeProduct(first) : null);
+      const product = (await this.fetchByUid(id)) ?? (await this.resolveMigrosId(id));
+      return ok(product ? normalizeProduct(product) : null);
     } catch (e) {
       return err(classifyError(e));
     }
