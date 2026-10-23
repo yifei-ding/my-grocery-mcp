@@ -54,7 +54,26 @@ export interface NormalizedProduct {
   tags: Tag[];
   imageUrl?: string;
   promotion?: { endsAt?: string; description?: string };
+  /**
+   * Nutrition facts per the chain's printed label, per 100g or 100ml.
+   * Only present when the chain actually publishes a nutrition table for
+   * this product (e.g. not for unlabelled fresh produce, or for chains
+   * whose API doesn't expose one at all). Values are grams except kcal.
+   */
+  nutrition?: NutritionFacts;
   raw?: unknown;
+}
+
+export interface NutritionFacts {
+  basis: '100g' | '100ml';
+  kcal?: number;
+  protein?: number;
+  fat?: number;
+  satFat?: number;
+  carbs?: number;
+  sugar?: number;
+  fiber?: number;
+  salt?: number;
 }
 
 export interface NormalizedStore {

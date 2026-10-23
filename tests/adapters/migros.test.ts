@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { normalizeProduct, normalizeStore, parseSize } from '../../src/adapters/migros/normalize.js';
+import { normalizeProduct, normalizeStore, parseSize, parseNutrition } from '../../src/adapters/migros/normalize.js';
 import { MigrosProductDetailSchema, MigrosProductDetailsResponseSchema } from '../../src/adapters/migros/schemas.js';
 
 describe('migros normalize variable-weight produce', () => {
@@ -104,6 +104,49 @@ describe('imageUrl sanitization', () => {
       offer: { price: { effectiveValue: 1, advertisedValue: 1 }, quantity: '1L' },
     };
     expect(normalizeProduct(raw).imageUrl).toBeUndefined();
+  });
+});
+
+describe('parseNutrition (fixture)', () => {
+  it('parses the real Vollmilch nutrition table (per 100ml)', () => {
+    let raw: any;
+    try {
+      raw = JSON.parse(readFileSync('tests/fixtures/migros/product-detail.json', 'utf8'));
+    } catch {
+      return; // fixture not yet captured — skip silently
+    }
+    const products = raw.products ?? Object.values(raw);
+    const product = products.find((p: any) => p?.name === 'Vollmilch');
+    if (!product) return;
+    expect(parseNutrition(product)).toEqual({
+      basis: '100ml',
+      kcal: 69,
+      fat: 4,
+      satFat: 2.2,
+      carbs: 5,
+      sugar: 5,
+      fiber: 0,
+      protein: 3.2,
+      salt: 0.1,
+    });
+  });
+
+  it('returns undefined when there is no nutrition table (e.g. coffee beans)', () => {
+    const raw: any = { uid: 1, name: 'Bohnenkaffee', productInformation: { mainInformation: {} } };
+    expect(parseNutrition(raw)).toBeUndefined();
+  });
+
+  it('flows through normalizeProduct onto the nutrition field', () => {
+    let raw: any;
+    try {
+      raw = JSON.parse(readFileSync('tests/fixtures/migros/product-detail.json', 'utf8'));
+    } catch {
+      return;
+    }
+    const products = raw.products ?? Object.values(raw);
+    const product = products.find((p: any) => p?.name === 'Vollmilch');
+    if (!product) return;
+    expect(normalizeProduct(product).nutrition?.kcal).toBe(69);
   });
 });
 

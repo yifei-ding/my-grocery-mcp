@@ -42,8 +42,18 @@ export const MigrosProductDetailSchema = z.object({
         name: z.string().optional(),
         slug: z.string().optional(),
       })).optional(),
-    }).optional(),
-  }).optional(),
+    })
+      // Keep undeclared mainInformation fields (nutrientsInformation): zod
+      // drops unknown keys from nested objects by default, which removed
+      // the nutrition table from search_products results.
+      .passthrough()
+      .optional(),
+  })
+    // nutrientsInformation has been observed directly under productInformation
+    // (sibling of mainInformation) on some product captures, and nested inside
+    // mainInformation on others — passthrough here covers the sibling case.
+    .passthrough()
+    .optional(),
   breadcrumb: z.array(z.object({
     id: z.string().optional(),
     name: z.string().optional(),

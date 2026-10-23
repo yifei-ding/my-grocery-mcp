@@ -20,10 +20,55 @@
 //   { items: [{id, type},...], numberOfItems, startDate, endDate }
 //   Items are IDs only — full data requires separate product detail calls.
 
-import type { NormalizedProduct, NormalizedStore, NormalizedPromotion, Unit } from '../types.js';
+import type { NormalizedProduct, NormalizedStore, NormalizedPromotion, NutritionFacts, Unit } from '../types.js';
 import { computeUnitPrice } from '../../util/unit-price.js';
 import { annotateMultipack } from '../../util/multipack.js';
 import { deriveTags } from './tags.js';
+
+// German nutrition-table row labels -> NutritionFacts keys. Migros labels
+// the "of which" rows as separate rows ("davon gesättigte Fettsäuren",
+// "davon Zucker"), not as a nested breakdown.
+const NUTRI_LABELS: Record<string, keyof Omit<NutritionFacts, 'basis'>> = {
+  'energie': 'kcal',
+  'fett': 'fat',
+  'davon gesättigte fettsäuren': 'satFat',
+  'kohlenhydrate': 'carbs',
+  'davon zucker': 'sugar',
+  'ballaststoffe': 'fiber',
+  'eiweiss': 'protein',
+  'salz': 'salt',
+};
+
+function parseNutriCell(text: string | undefined, isEnergy: boolean): number | undefined {
+  if (!text) return undefined;
+  // Energie cells read "287 kJ (69 kcal)" — kcal is the parenthesised number.
+  const m = isEnergy ? text.match(/\(([\d.,]+)\s*kcal\)/i) : text.match(/([\d.,]+)/);
+  return m ? parseFloat(m[1].replace(',', '.')) : undefined;
+}
+
+/**
+ * Parses the printed nutrition table (per getProduct's raw.productInformation
+ * .mainInformation.nutrientsInformation.nutrientsTable). Not every product
+ * has one — unlabelled fresh produce and some non-food items don't.
+ */
+export function parseNutrition(raw: MigrosProductRaw): NutritionFacts | undefined {
+  const info = (raw as any)?.productInformation;
+  // Observed in both shapes: nested inside mainInformation, and as a
+  // sibling of it directly under productInformation.
+  const nutrients = info?.mainInformation?.nutrientsInformation ?? info?.nutrientsInformation;
+  const table = nutrients?.nutrientsTable;
+  const header = table?.headers?.[0];
+  if (!table || typeof header !== 'string') return undefined;
+  const basis: NutritionFacts['basis'] = /ml/i.test(header) ? '100ml' : '100g';
+  const out: NutritionFacts = { basis };
+  for (const row of (table.rows ?? []) as Array<{ label?: string; values?: string[] }>) {
+    const key = NUTRI_LABELS[String(row.label ?? '').trim().toLowerCase()];
+    if (!key) continue;
+    const v = parseNutriCell(row.values?.[0], key === 'kcal');
+    if (v !== undefined) out[key] = v;
+  }
+  return out.kcal !== undefined ? out : undefined;
+}
 
 function sanitizeRokkaUrl(url: string | undefined | null): string | undefined {
   if (!url) return undefined;
@@ -249,6 +294,7 @@ export function normalizeProduct(raw: MigrosProductRaw): NormalizedProduct {
     tags,
     imageUrl,
     promotion: basePromotion,
+    nutrition: parseNutrition(raw),
     raw,
   };
   // If approx, mark via promotion description so the LLM can communicate
