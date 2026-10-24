@@ -80,6 +80,18 @@ Conventions:
   `SWISSGROCERIES_LOG_LEVEL`, `SWISSGROCERIES_USER_AGENT_COOP`; also `DENNER_JWT`,
   `LIDL_DEFAULT_STORE`.
 
+## Fridge-book tools (src/fridge/, src/tools/fridge.ts)
+
+Used by the 冰箱账本 artifact's nightly import (a scheduled task), not by chain adapters.
+- `migros_receipt_script` returns JS that the task runs in the user's logged-in
+  account.migros.ch tab (Claude in Chrome). The functions in `src/fridge/receipt.ts` are
+  embedded with `Function.prototype.toString()` — keep each one a self-contained
+  `function` declaration (no imports, no module-level helpers). Output = item lines only;
+  never return payment/Cumulus lines.
+- `fridge_item_fields`: `chainOf` / `slugOf` / `nutriKey` must stay identical to the App's
+  page script (nutriCache keys). Change both together; the test copies the App's slug.
+- No Migros login here, ever: the browser session is the only auth.
+
 ## Commits
 
 Small, one concern each; message explains the real-data reason. Run `npm test` and
