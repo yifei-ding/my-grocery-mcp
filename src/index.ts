@@ -27,6 +27,11 @@ import { getPromotionsHandler, getPromotionsSchema } from './tools/get_promotion
 import { findStockHandler, findStockSchema } from './tools/find_stock.js';
 import { planShoppingHandler, planShoppingSchema } from './tools/plan_shopping.js';
 import { healthCheckHandler, healthCheckSchema } from './tools/health_check.js';
+import {
+  migrosReceiptScriptHandler, migrosReceiptScriptSchema,
+  parseCoopReceiptHandler, parseCoopReceiptSchema,
+  fridgeItemFieldsHandler, fridgeItemFieldsSchema,
+} from './tools/fridge.js';
 import { ToolError } from './tools/errors.js';
 import { listPrompts, getPrompt } from './prompts.js';
 import { logger } from './util/log.js';
@@ -118,6 +123,31 @@ const TOOLS = [
     ].join(' '),
     schema: planShoppingSchema,
     handler: planShoppingHandler,
+  },
+  {
+    name: 'migros_receipt_script',
+    description: [
+      'Fridge-book import: returns a ready-to-run JavaScript snippet that, executed in the user\'s own logged-in account.migros.ch tab',
+      '(Claude in Chrome javascript_tool), lists Migros receipts, parses item lines and pairs each line with its Migros product id and page URL.',
+      'Returns only item lines (never payment/Cumulus lines). Give dateFrom+dateTo for new receipts, or rids to backfill product ids.',
+    ].join(' '),
+    schema: migrosReceiptScriptSchema,
+    handler: migrosReceiptScriptHandler,
+  },
+  {
+    name: 'parse_coop_receipt',
+    description: 'Fridge-book import: parse the item lines (name, qty, unit price, discount, total) of one Coop receipt from its `pdftotext -layout` text.',
+    schema: parseCoopReceiptSchema,
+    handler: parseCoopReceiptHandler,
+  },
+  {
+    name: 'fridge_item_fields',
+    description: [
+      'Fridge-book import: for each item compute the fields the 冰箱账本 App must agree on —',
+      'nutriCache key (chain:slug, same algorithm as the App), chain, and expires = bought + shelf days (from kind or shelfDays).',
+    ].join(' '),
+    schema: fridgeItemFieldsSchema,
+    handler: fridgeItemFieldsHandler,
   },
 ] as const;
 
